@@ -79,6 +79,10 @@ def FindPictures(domain, sybmols, i):
             DownloadImage(img["src"], name, path, i)
 
 
+if not isExistOnPC("", path):
+    os.mkdir(path)
+    print("Making image folder")
+
 i = 1
 while True:
     try:
