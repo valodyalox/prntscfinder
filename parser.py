@@ -1,7 +1,7 @@
 import requests
 import os
 import re
-from datetime import datetime
+import pickle
 from bs4 import BeautifulSoup as bs
 import random
 import logging
@@ -25,7 +25,15 @@ headers = {
 symbols = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
            'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
-empty_urls = []
+
+def SaveFile(data, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
+
+
+def LoadFile(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
 
 
 def isExistOnPC(name, path):
@@ -41,7 +49,7 @@ def getImageFormat(url):
 
 def DownloadImage(url, name, path, i):
     if not isExistOnPC(name, path):
-        print(f"Downloading: {url} from {domain}{name}..")
+        print(f"Downloading: {url} from {domain}{name}")
         try:
             with open(f"{path}{i} {name}{getImageFormat(url)}", "wb") as file:
                 image = requests.get(url, headers=headers)
@@ -49,7 +57,7 @@ def DownloadImage(url, name, path, i):
 
         except Exception as error:
             log.error(f"Couldn't download {domain}{name}, {error}")
-            return os.remove(f"{path}{name}{getImageFormat(url)}")
+            os.remove(f"{path}{name}{getImageFormat(url)}")
 
         else:
             log.info(f"Downloaded {domain}{name}")
@@ -64,9 +72,7 @@ def FindPictures(domain, sybmols, i):
 
     url = domain + name
 
-    # url = "https://prnt.sc/g5o5n8" NONE EXAMPLE
     ans = requests.get(url, headers=headers)
-
     soup = bs(ans.content, "lxml")
 
     if soup.find("img", {"id": "screenshot-image", "class": "no-click screenshot-image",
@@ -74,10 +80,18 @@ def FindPictures(domain, sybmols, i):
         print(f"{url} not contain image")
         log.warning(f"{url} not contain image")
         empty_urls.append(url)
+        SaveFile(empty_urls, "empty_urls.pkl")
     else:
         for img in soup.find_all("img", {"id": "screenshot-image", "class": "no-click screenshot-image"}):
             DownloadImage(img["src"], name, path, i)
 
+
+try:
+    empty_urls = LoadFile("empty_urls.pkl")
+
+except Exception:
+    empty_urls = []
+    SaveFile(empty_urls, "empty_urls.pkl")
 
 if not isExistOnPC("", path):
     os.mkdir(path)
